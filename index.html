@@ -6005,7 +6005,7 @@ function flushSave(){
     .catch(()=>{}).finally(()=>{ flushP=null; });
 }
 const later=()=>{ clearTimeout(tm); tm=setTimeout(save,1000); };   // any real action (plant, sell, buy, harvest...) saves 2s later
-setInterval(save,5000);   // autosave every 10 seconds (only writes if something changed)
+setInterval(save,10000);   // autosave every 10 seconds (only writes if something changed)
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSave(); }); addEventListener('pagehide',flushSave); addEventListener('beforeunload',flushSave);
 addEventListener('online',()=>save(true));   // came back online: push everything straight away
 setInterval(()=>{ if(saveState==='ok'&&lastOkAt&&!savePromise){ const el=$('ggSave'); if(el){ const sec=Math.round((Date.now()-lastOkAt)/1000); el.textContent=sec<5?'Saved \u2713':'Saved '+(sec<60?sec+'s':Math.floor(sec/60)+'m')+' ago'; } } },5000);
@@ -6280,7 +6280,7 @@ let last='',idle=0;
 setInterval(()=>{ if(!joined||!ch||ch.state!=='joined') return;
   const x=rig.position.x, y=rig.position.y-EYE_H, z=rig.position.z, h=heldOf(), k=[x,y,z,yaw].map(v=>v.toFixed(2)).join()+'|'+(sprinting?1:0)+JSON.stringify(h);
   if(k===last&&++idle<20) return; idle=0; last=k;
-  ch.send({type:'broadcast',event:'mv',payload:{u:me,x:+x.toFixed(2),y:+y.toFixed(2),z:+z.toFixed(2),r:+yaw.toFixed(2),s:sprinting?1:0,a:y>.08?1:0,h:h,c:GG_LOOK_STR()}}); },100);
+  ch.send({type:'broadcast',event:'mv',payload:{u:me,x:+x.toFixed(2),y:+y.toFixed(2),z:+z.toFixed(2),r:+yaw.toFixed(2),s:sprinting?1:0,a:y>.08?1:0,h:h,c:GG_LOOK_STR()}}); },250);
 let hbBusy=false;
 setInterval(async()=>{ if(!room||hbBusy) return; hbBusy=true; try{ const r=await sb.rpc('heartbeat',{p_room:room}); if(r.data===false){ await save(true); location.reload(); } }catch(e){ console.warn('heartbeat',e); } finally{ hbBusy=false; } },20000);
 $('ggSkin').onclick=()=>GG_openCustomize();
