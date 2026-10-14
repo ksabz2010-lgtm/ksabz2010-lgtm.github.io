@@ -5968,7 +5968,7 @@ function setSaveStatus(st){ saveState=st; const el=$('ggSave'); if(!el) return; 
 async function saveOnce(force,retried){
   if(flushP){ try{ await flushP; }catch(e){} }   // let any tab-close save land first so the version number is right
   const sv=ser(), key=JSON.stringify(Object.assign({},sv,{position:0}));
-  if(force!==true&&key===lastSaveKey&&Date.now()-lastSaveAt<60000) return true;   // nothing changed: don't hit the database (idle players still re-save about once a minute)
+  if(force!==true&&key===lastSaveKey&&Date.now()-lastSaveAt<300000) return true;   // unchanged saves are skipped for 5 minutes to reduce needless database traffic
   saving=true; setSaveStatus('saving');
   try{ const r=await sb.rpc('save_progress',{p_expected_version:ver,p_save:sv});
     if(r.error){
