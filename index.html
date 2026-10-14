@@ -5962,7 +5962,7 @@ const ser=()=>({coins:Math.floor(coins),plot_level:plotLevel,inventory:inventory
   growing_tree:(plot.seed&&(plot.alive||plot.struck))?{seed:{name:plot.seed.name},seedIdx:SEEDS.indexOf(plot.seed),size:plot.size,growT:plot.growT,growRate:plot.growRate,fert:!!plot.fert,waterT:plot.waterT||0,rod:!!plot.rod,midas:!!plot.midas,predMin:plot.predMin||0,predX:plot.predX||0,gSize:plot.gSize||0,gName:plot.gName||'',struck:!!plot.struck}:null,
   placed_trees:placedTrees.map(t=>({x:t.x,z:t.z,rec:t.rec})),pets:GG_PETS.ST,quests:Q||{},meta:META,
   shop:{stock:SHOP_STOCK,next:shopNextT,ep:mEp},wheel_next_at:Math.floor(wheelNextT||0),position:{x:rig.position.x,z:rig.position.z,yaw:tYaw}});
-let lastSaveKey='', lastSaveAt=0, savePromise=null, saveWant=0, flushP=null, lastFlush=0, tok='', lastOkAt=0, saveState='';
+let lastSaveKey='', lastSaveAt=0, savePromise=null, saveWant=0, flushP=null, lastFlush=0, tok='', lastOkAt=0, saveState='', retryTimer=null;
 sb.auth.onAuthStateChange((_e,ss)=>{ tok=(ss&&ss.access_token)||''; });   // cached so a tab-close save can be sent without awaiting anything
 function setSaveStatus(st){ saveState=st; const el=$('ggSave'); if(!el) return; el.className=st==='fail'?'bad':''; el.textContent=st==='saving'?'Saving\u2026':st==='fail'?'\u26a0 Not saved':st==='ok'?'Saved \u2713':''; }
 async function saveOnce(force,retried){
@@ -5978,7 +5978,7 @@ async function saveOnce(force,retried){
           if(v.data&&typeof v.data.version==='number'){ ver=v.data.version; saving=false; return await saveOnce(true,true); } }
         dead=true; showToast('Saved from another tab or device. Reload to continue.'); setSaveStatus('fail'); return false; }
       else console.warn('save failed:',r.error.message);
-      failN++; setSaveStatus('fail'); setTimeout(()=>save(true),Math.min(30000,2000*failN)); return false; }
+      failN++; setSaveStatus('fail'); clearTimeout(retryTimer); retryTimer=setTimeout(()=>{ retryTimer=null; save(false); },Math.min(300000,15000*Math.pow(2,Math.min(failN-1,5)))); return false; }
     failN=0;
     ver=r.data; lastSaveKey=key; lastSaveAt=Date.now(); lastOkAt=lastSaveAt; localStorage.setItem('gg_owner',me+':'+ver); setSaveStatus('ok'); return true;
   }catch(e){ console.warn(e); setSaveStatus('fail'); return false; }
@@ -6005,7 +6005,7 @@ function flushSave(){
     .catch(()=>{}).finally(()=>{ flushP=null; });
 }
 const later=()=>{ clearTimeout(tm); tm=setTimeout(save,1000); };   // any real action (plant, sell, buy, harvest...) saves 2s later
-setInterval(save,10000);   // autosave every 10 seconds (only writes if something changed)
+setInterval(save,60000);   // autosave every 60 seconds; actions still schedule saves and unchanged snapshots are skipped
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSave(); }); addEventListener('pagehide',flushSave); addEventListener('beforeunload',flushSave);
 addEventListener('online',()=>save(true));   // came back online: push everything straight away
 setInterval(()=>{ if(saveState==='ok'&&lastOkAt&&!savePromise){ const el=$('ggSave'); if(el){ const sec=Math.round((Date.now()-lastOkAt)/1000); el.textContent=sec<5?'Saved \u2713':'Saved '+(sec<60?sec+'s':Math.floor(sec/60)+'m')+' ago'; } } },5000);
